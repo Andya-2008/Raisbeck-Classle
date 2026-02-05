@@ -26,60 +26,60 @@
   const STREAK_STORAGE_KEY = 'class-wordle-streak';
 
   const CLASSES = [
-    { name: "Algebra 2", teacher: "Campbell", floor: "3", subject: "Math", type: "Class", room: "3160" },
-    { name: "Pre-Calculus", teacher: "Campbell", floor: "3", subject: "Math", type: "Class", room: "3160" },
-    { name: "Health", teacher: "Campbell", floor: "3", subject: "Miscellaneous", type: "Class", room: "3160" },
-    { name: "English 10", teacher: "Carmichael", floor: "3", subject: "English", type: "Class", room: "3130" },
-    { name: "Aviation Theater", teacher: "Carmichael", floor: "3", subject: "Arts", type: "Class", room: "3130" },
-    { name: "Shop", teacher: "Fenbert", floor: "1", subject: "Science", type: "Class", room: "1810" },
-    { name: "CAD 1 / CAD 2", teacher: "Fenbert", floor: "1", subject: "Science", type: "Class", room: "1810" },
-    { name: "Applied Physics", teacher: "Fenbert", floor: "1", subject: "Science", type: "Class", room: "1810" },
-    { name: "Geometry", teacher: "Gross", floor: "3", subject: "Math", type: "Class", room: "3180" },
-    { name: "Leadership", teacher: "Gross", floor: "3", subject: "Miscellaneous", type: "Class", room: "3180" },
-    { name: "Intro to Aerospace", teacher: "Heineman", floor: "1", subject: "Science", type: "Class", room: "1830" },
-    { name: "Robotics", teacher: "Heineman", floor: "1", subject: "Science", type: "Class", room: "1830" },
-    { name: "AP Computer Science", teacher: "Heineman", floor: "1", subject: "Science", type: "Class", room: "1830" },
-    { name: "AP Calculus", teacher: "Joshi", floor: "3", subject: "Math", type: "Class", room: "3500" },
-    { name: "UW Astronomy", teacher: "Joshi", floor: "3", subject: "Science", type: "Class", room: "3500" },
-    { name: "Pre-Calculus", teacher: "Joshi", floor: "3", subject: "Math", type: "Class", room: "3500" },
-    { name: "Chemistry", teacher: "Lutz", floor: "3", subject: "Science", type: "Class", room: "3550" },
-    { name: "Visual Arts", teacher: "Marshalla", floor: "3", subject: "Arts", type: "Class", room: "3140" },
-    { name: "Spanish 2", teacher: "Marshalla", floor: "3", subject: "Language", type: "Class", room: "3140" },
-    { name: "Spanish 3 / AP Spanish", teacher: "Marshalla", floor: "3", subject: "Language", type: "Class", room: "3140" },
-    { name: "Advanced Aerospace", teacher: "McComb", floor: "2", subject: "Science", type: "Class", room: "2350" },
-    { name: "Physics of Flight", teacher: "McComb", floor: "2", subject: "Science", type: "Class", room: "2350" },
-    { name: "ISSB", teacher: "Nelson", floor: "3", subject: "History", type: "Class", room: "3510" },
-    { name: "APUSH", teacher: "Nipert", floor: "3", subject: "History", type: "Class", room: "3170" },
-    { name: "English 12", teacher: "Nipert", floor: "3", subject: "English", type: "Class", room: "3170" },
-    { name: "Aviation Careers", teacher: "Nurzhanov", floor: "2", subject: "Miscellaneous", type: "Class", room: "2310" },
-    { name: "English 9", teacher: "Nurzhanov", floor: "2", subject: "English", type: "Class", room: "2310" },
-    { name: "APES", teacher: "Olson", floor: "3", subject: "Science", type: "Class", room: "3580" },
-    { name: "Biology", teacher: "Olson", floor: "3", subject: "Science", type: "Class", room: "3580" },
-    { name: "APES", teacher: "Porter", floor: "3", subject: "Science", type: "Class", room: "3580" },
-    { name: "Human History", teacher: "Porter", floor: "2", subject: "History", type: "Class", room: "2320" },
-    { name: "AP Language and Composition", teacher: "Salnick", floor: "3", subject: "English", type: "Class", room: "3520" },
-    { name: "Business", teacher: "Salnick", floor: "3", subject: "Miscellaneous", type: "Class", room: "3520" },
-    { name: "Photography", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" },
-    { name: "Publishing (Journalism)", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" },
-    { name: "Yearbook", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" },
-    { name: "Spanish 1", teacher: "St Clair", floor: "3", subject: "Language", type: "Class", room: "3150" },
-    { name: "Aviation Careers", teacher: "St Clair", floor: "3", subject: "Miscellaneous", type: "Class", room: "3150" },
-    { name: "Civics", teacher: "St Clair", floor: "3", subject: "History", type: "Class", room: "3150" },
-    { name: "AP Statistics", teacher: "Stolz", floor: "2", subject: "Math", type: "Class", room: "2380" },
-    { name: "Algebra 1", teacher: "Stolz", floor: "2", subject: "Math", type: "Class", room: "2380" },
-    { name: "Algebra 2", teacher: "Stolz", floor: "2", subject: "Math", type: "Class", room: "2380" },
-    { name: "UW English", teacher: "Wombold", floor: "3", subject: "English", type: "Class", room: "3530" },
-    { name: "Science Olympiad", teacher: "McComb", floor: "2", subject: "Science", type: "Club", room: "2350" },
-    { name: "AIAA", teacher: "McComb", floor: "2", subject: "Science", type: "Club", room: "2350" },
-    { name: "ACE", teacher: "Campbell", floor: "3", subject: "Science", type: "Club", room: "3160" },
-    { name: "Key Club", teacher: "Olson", floor: "3", subject: "Miscellaneous", type: "Club", room: "3580" },
-    { name: "Environmental Club", teacher: "Olson", floor: "3", subject: "Science", type: "Club", room: "3580" },
-    { name: "NHS (National Honor Society)", teacher: "Gross", floor: "3", subject: "Miscellaneous", type: "Club", room: "3180" },
-    { name: "TSA (Technology Student Association)", teacher: "Schwimmer", floor: "2", subject: "Science", type: "Club", room: "2370" },
-    { name: "Robotics", teacher: "Carmichael", floor: "1", subject: "Science", type: "Club", room: "3130" },
+    { name: "Algebra 2", teacher: "Campbell", floor: "3", subject: "Math", type: "Class", room: "3160" , periods: ['2', '3', '6'] },
+    { name: "Pre-Calculus", teacher: "Campbell", floor: "3", subject: "Math", type: "Class", room: "3160" , periods: ['4', '5', '6'] },
+    { name: "Health", teacher: "Campbell", floor: "3", subject: "Miscellaneous", type: "Class", room: "3160" , periods: ['4', '5'] },
+    { name: "English 10", teacher: "Carmichael", floor: "3", subject: "English", type: "Class", room: "3130" , periods: ['1', '2', '4', '5'] },
+    { name: "Aviation Theater", teacher: "Carmichael", floor: "3", subject: "Arts", type: "Class", room: "3130" , periods: ['6'] },
+    { name: "Shop", teacher: "Fenbert", floor: "1", subject: "Science", type: "Class", room: "1810" , periods: ['1', '6'] },
+    { name: "CAD 1 / CAD 2", teacher: "Fenbert", floor: "1", subject: "Science", type: "Class", room: "1810" , periods: ['2', '4'] },
+    { name: "Applied Physics", teacher: "Fenbert", floor: "1", subject: "Science", type: "Class", room: "1810" , periods: ['5'] },
+    { name: "Geometry", teacher: "Gross", floor: "3", subject: "Math", type: "Class", room: "3180" , periods: ['1', '2', '3', '6'] },
+    { name: "Leadership", teacher: "Gross", floor: "3", subject: "Miscellaneous", type: "Class", room: "3180" , periods: ['4'] },
+    { name: "Intro to Aerospace", teacher: "Heineman", floor: "1", subject: "Science", type: "Class", room: "1830" , periods: ['1', '2'] },
+    { name: "Robotics", teacher: "Heineman", floor: "1", subject: "Science", type: "Class", room: "1830" , periods: ['3', '6'] },
+    { name: "AP Computer Science", teacher: "Heineman", floor: "1", subject: "Science", type: "Class", room: "1830" , periods: ['4'] },
+    { name: "AP Calculus", teacher: "Joshi", floor: "3", subject: "Math", type: "Class", room: "3500" , periods: ['1', '3'] },
+    { name: "UW Astronomy", teacher: "Joshi", floor: "3", subject: "Science", type: "Class", room: "3500" , periods: ['2'] },
+    { name: "Pre-Calculus", teacher: "Joshi", floor: "3", subject: "Math", type: "Class", room: "3500" , periods: ['4', '5', '6'] },
+    { name: "Chemistry", teacher: "Lutz", floor: "3", subject: "Science", type: "Class", room: "3550" , periods: ['1', '2', '4', '5'] },
+    { name: "Visual Arts", teacher: "Marshalla", floor: "3", subject: "Arts", type: "Class", room: "3140" , periods: ['1'] },
+    { name: "Spanish 2", teacher: "Marshalla", floor: "3", subject: "Language", type: "Class", room: "3140" , periods: ['2', '3', '4'] },
+    { name: "Spanish 3 / AP Spanish", teacher: "Marshalla", floor: "3", subject: "Language", type: "Class", room: "3140" , periods: ['5'] },
+    { name: "Advanced Aerospace", teacher: "McComb", floor: "2", subject: "Science", type: "Class", room: "2350" , periods: ['2'] },
+    { name: "Physics of Flight", teacher: "McComb", floor: "2", subject: "Science", type: "Class", room: "2350" , periods: ['3', '4', '5', '6'] },
+    { name: "ISSB", teacher: "Nelson", floor: "3", subject: "History", type: "Class", room: "3510" , periods: ['1', '2', '3', '6'] },
+    { name: "APUSH", teacher: "Nipert", floor: "3", subject: "History", type: "Class", room: "3170" , periods: ['1', '3', '4', '5'] },
+    { name: "English 12", teacher: "Nipert", floor: "3", subject: "English", type: "Class", room: "3170" , periods: ['2'] },
+    { name: "Aviation Careers", teacher: "Nurzhanov", floor: "2", subject: "Miscellaneous", type: "Class", room: "2310" , periods: ['1', '2'] },
+    { name: "English 9", teacher: "Nurzhanov", floor: "2", subject: "English", type: "Class", room: "2310" , periods: ['3', '4', '5', '6'] },
+    { name: "APES", teacher: "Olson", floor: "3", subject: "Science", type: "Class", room: "3580" , periods: ['1', '2'] },
+    { name: "Biology", teacher: "Olson", floor: "3", subject: "Science", type: "Class", room: "3580" , periods: ['3', '4', '5', '6'] },
+    { name: "APES", teacher: "Porter", floor: "3", subject: "Science", type: "Class", room: "3580" , periods: ['1', '2'] },
+    { name: "Human History", teacher: "Porter", floor: "2", subject: "History", type: "Class", room: "2320" , periods: ['3', '4', '5', '6'] },
+    { name: "AP Language and Composition", teacher: "Salnick", floor: "3", subject: "English", type: "Class", room: "3520" , periods: ['1', '2', '3', '5'] },
+    { name: "Business", teacher: "Salnick", floor: "3", subject: "Miscellaneous", type: "Class", room: "3520" , periods: ['6'] },
+    { name: "Photography", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" , periods: ['1', '2'] },
+    { name: "Publishing (Journalism)", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" , periods: ['3', '5'] },
+    { name: "Yearbook", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" , periods: ['6'] },
+    { name: "Spanish 1", teacher: "St Clair", floor: "3", subject: "Language", type: "Class", room: "3150" , periods: ['1', '6'] },
+    { name: "Aviation Careers", teacher: "St Clair", floor: "3", subject: "Miscellaneous", type: "Class", room: "3150" , periods: ['1', '2'] },
+    { name: "Civics", teacher: "St Clair", floor: "3", subject: "History", type: "Class", room: "3150" , periods: ['4', '5'] },
+    { name: "AP Statistics", teacher: "Stolz", floor: "2", subject: "Math", type: "Class", room: "2380" , periods: ['1'] },
+    { name: "Algebra 1", teacher: "Stolz", floor: "2", subject: "Math", type: "Class", room: "2380" , periods: ['4', '5'] },
+    { name: "Algebra 2", teacher: "Stolz", floor: "2", subject: "Math", type: "Class", room: "2380" , periods: ['2', '3', '6'] },
+    { name: "UW English", teacher: "Wombold", floor: "3", subject: "English", type: "Class", room: "3530" , periods: ['3', '4', '5'] },
+    { name: "Science Olympiad", teacher: "McComb", floor: "2", subject: "Science", type: "Club", room: "2350" , periods: ['N/A'] },
+    { name: "AIAA", teacher: "McComb", floor: "2", subject: "Science", type: "Club", room: "2350" , periods: ['N/A'] },
+    { name: "ACE", teacher: "Campbell", floor: "3", subject: "Science", type: "Club", room: "3160" , periods: ['N/A'] },
+    { name: "Key Club", teacher: "Olson", floor: "3", subject: "Miscellaneous", type: "Club", room: "3580" , periods: ['N/A'] },
+    { name: "Environmental Club", teacher: "Olson", floor: "3", subject: "Science", type: "Club", room: "3580" , periods: ['N/A'] },
+    { name: "NHS (National Honor Society)", teacher: "Gross", floor: "3", subject: "Miscellaneous", type: "Club", room: "3180" , periods: ['N/A'] },
+    { name: "TSA (Technology Student Association)", teacher: "Schwimmer", floor: "2", subject: "Science", type: "Club", room: "2370" , periods: ['N/A'] },
+    { name: "Robotics", teacher: "Carmichael", floor: "1", subject: "Science", type: "Club", room: "3130" , periods: ['N/A'] },
   ];
 
-  const ATTRIBUTES = ['teacher', 'floor', 'room', 'subject', 'type'];
+  const ATTRIBUTES = ['teacher', 'floor', 'room', 'subject', 'type', 'periods'];
   const Confetti = () => {
     const [pieces, setPieces] = useState([]);
     
@@ -541,6 +541,24 @@ const loadDailyWinners = async () => {
       results.className = (guessClass.name === targetClass.name && guessClass.teacher === targetClass.teacher) ? 'correct' : 'incorrect';
       
       ATTRIBUTES.forEach(attr => {
+        if (attr === 'periods') {
+          const guessPeriods = Array.isArray(guessClass.periods) ? guessClass.periods : [];
+          const targetPeriods = Array.isArray(targetClass.periods) ? targetClass.periods : [];
+          const guessSet = new Set(guessPeriods);
+          const targetSet = new Set(targetPeriods);
+          const sharedCount = [...guessSet].filter(p => targetSet.has(p)).length;
+          const sharesSome = sharedCount > 0;
+          const sharesAll = targetSet.size > 0 && sharedCount === targetSet.size && guessSet.size === targetSet.size;
+
+          if (sharesAll) {
+            results[attr] = 'correct';
+          } else if (sharesSome) {
+            results[attr] = 'close';
+          } else {
+            results[attr] = 'incorrect';
+          }
+          return;
+        }
         if (attr === 'room') {
           const guessRoom = parseInt(guessClass.room);
           const targetRoom = parseInt(targetClass.room);
@@ -666,6 +684,13 @@ const loadDailyWinners = async () => {
       if (status === 'correct') return 'bg-green-500 text-white';
       if (status === 'close') return 'bg-yellow-500 text-white';
       return 'bg-gray-300 text-gray-700';
+    };
+    const formatAttributeValue = (attr, value) => {
+      if (attr === 'periods') {
+        if (Array.isArray(value) && value.length > 0) return value.join(', ');
+        return '—';
+      }
+      return value ?? '—';
     };
 
     const getTimeUntilTomorrow = () => {
@@ -860,6 +885,28 @@ setView('leaderboard');
 </h1>
               
               <p className="text-gray-600 text-sm sm:text-base">Guess the mystery class or club based on its attributes!</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <button
+                  onClick={() => startGame('daily')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    gameMode === 'daily'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  Daily Mode
+                </button>
+                <button
+                  onClick={() => startGame('unlimited')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    gameMode === 'unlimited'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  Unlimited Mode
+                </button>
+              </div>
               {gameMode === 'daily' && (
                 <div className="mt-2 text-xs sm:text-sm text-gray-500 space-y-1">
                   <div className="flex items-center justify-center gap-2">
@@ -958,15 +1005,15 @@ setView('leaderboard');
                   }`}>
                     {guess.class.name}
                   </div>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     {ATTRIBUTES.map((attr, attrIdx) => (
                       <div 
                         key={attr} 
-                        className={`${getAttributeColor(guess.results[attr])} rounded px-2 sm:px-3 py-2 text-center text-xs sm:text-sm transition-all duration-300 animate-flip`}
+                        className={`${getAttributeColor(guess.results[attr])} rounded px-2 sm:px-3 py-2 text-center text-[11px] sm:text-sm leading-tight transition-all duration-300 animate-flip`}
                         style={{ animationDelay: `${attrIdx * 0.15}s` }}
                       >
                         <div className="font-semibold capitalize">{attr}</div>
-                        <div className="text-xs mt-1">{guess.class[attr]}</div>
+                        <div className="mt-1 break-words whitespace-normal">{formatAttributeValue(attr, guess.class[attr])}</div>
                       </div>
                     ))}
                   </div>
