@@ -1,10 +1,12 @@
-  import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect, useRef } from 'react';
   import { CheckCircle, XCircle, RotateCcw, Calendar, Infinity } from 'lucide-react';
   import { Crown, ArrowUp, ArrowDown } from 'lucide-react';
   import { initializeApp } from 'firebase/app';
   import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore';
   import { increment } from 'firebase/firestore';
   import { getDocs } from 'firebase/firestore';
+  
+
 
   // Firebase configuration
   const firebaseConfig = {
@@ -20,7 +22,8 @@
   freshman: 'Freshmen',
   sophomore: 'Sophomores',
   junior: 'Juniors',
-  senior: 'Seniors'
+  senior: 'Seniors',
+  staff: 'Staff'
 };
 
   // Initialize Firebase
@@ -63,7 +66,7 @@
     { name: "AP Language and Composition", teacher: "Salnick", floor: "3", subject: "English", type: "Class", room: "3520" },
     { name: "Business", teacher: "Salnick", floor: "3", subject: "Miscellaneous", type: "Class", room: "3520" },
     { name: "Photography", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" },
-    { name: "Publishing", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" },
+    { name: "Publishing (Journalism)", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" },
     { name: "Yearbook", teacher: "Schwimmer", floor: "2", subject: "Arts", type: "Class", room: "2370" },
     { name: "Spanish 1", teacher: "St Clair", floor: "3", subject: "Language", type: "Class", room: "3150" },
     { name: "Aviation Careers", teacher: "St Clair", floor: "3", subject: "Miscellaneous", type: "Class", room: "3150" },
@@ -86,7 +89,7 @@
   // Confetti component
   const Confetti = () => {
     const [pieces, setPieces] = useState([]);
-
+    
     useEffect(() => {
       const newPieces = Array.from({ length: 50 }, (_, i) => ({
         id: i,
@@ -138,8 +141,10 @@
       </div>
     );
   };
+  const APP_VERSION = '1.0.5'; // bump this on every deploy
 
   export default function ClassWordleGame() {
+    const gradePromptRef = useRef(null);
     const [gameMode, setGameMode] = useState(null); // 'daily' or 'unlimited'
     const [targetClass, setTargetClass] = useState(null);
     const [guesses, setGuesses] = useState([]);
@@ -157,13 +162,21 @@
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const [showGradePrompt, setShowGradePrompt] = useState(false);
     const [userGrade, setUserGrade] = useState(null);
+    const [dailyWinners, setDailyWinners] = useState([]);
     const [leaderboardData, setLeaderboardData] = useState({
   freshman: 0,
   sophomore: 0,
   junior: 0,
-  senior: 0
+  senior: 0,
+  staff: 0
 });
-
+useEffect(() => {
+    const storedVersion = localStorage.getItem('classle-app-version');
+    if (storedVersion !== APP_VERSION) {
+      localStorage.setItem('classle-app-version', APP_VERSION);
+      window.location.reload();
+    }
+  }, []);
     const [previousRanks, setPreviousRanks] = useState({});
     const [rankChanges, setRankChanges] = useState({});
     const [view, setView] = useState('game'); 
@@ -172,7 +185,8 @@
 
     const getTodayString = () => {
       const today = new Date();
-      return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+      const pad = n => n.toString().padStart(2, '0');
+return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
     };
     const [pointToast, setPointToast] = useState(null);
     const getDailyClass = (dateString) => {
@@ -227,38 +241,65 @@ setView('leaderboard');
     };
 
     useEffect(() => {
-  loadGameState();
-  loadLeaderboard();          // 👈 ADD THIS
-  finalizeDayIfNeeded(getTodayString());
-      
-      // Developer mode: Ctrl + Alt + M to reset
-      const handleKeyDown = (e) => {
-        if (e.ctrlKey && e.altKey && e.key === 'm') {
-          e.preventDefault();
-          setGuesses([]);
-          setSelectedClass('');
-          setInputValue('');
-          setShowDropdown(false);
-          setGameOver(false);
-          setWon(false);
-          setAlreadyCompleted(false);
-          setShowConfetti(false);
-          setShowGradePrompt(false);
-          setUserGrade(null);
-          setShowLeaderboard(false);
-          // Clear localStorage
-          const today = getTodayString();
-          localStorage.removeItem(`class-wordle-${today}`);
-          console.log('Developer mode: Puzzle reset - including grade prompt');
-        }
-      };
-      
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    loadGameState();
+    loadLeaderboard();
+    const yesterday = new Date();
+yesterday.setDate(yesterday.getDate() - 1);
 
-    const rankedClasses = Object.entries(leaderboardData)
-  .map(([grade, points]) => ({ grade, points }))
+const y = `${yesterday.getFullYear()}-${yesterday.getMonth() + 1}-${yesterday.getDate()}`;
+finalizeDayIfNeeded(y);
+
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.altKey && e.key === 'm') {
+        e.preventDefault();
+        setGuesses([]);
+        setSelectedClass('');
+        setInputValue('');
+        setShowDropdown(false);
+        setGameOver(false);
+        setWon(false);
+        setAlreadyCompleted(false);
+        setShowConfetti(false);
+        setShowGradePrompt(false);
+        setUserGrade(null);
+
+        const today = getTodayString();
+        localStorage.removeItem(`class-wordle-${today}`);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // ✅ Leaderboard scroll
+  useEffect(() => {
+  if (view === 'leaderboard') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    loadLeaderboardHistory();
+    loadDailyWinners();
+  }
+}, [view]);
+
+  // ✅ Grade prompt scroll
+  useEffect(() => {
+    if (showGradePrompt && gradePromptRef.current) {
+      gradePromptRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, [showGradePrompt]);
+    const lifetimeWinner =
+  lifetimeLeaderboard &&
+  Object.entries(lifetimeLeaderboard)
+    .filter(([key]) => key !== 'lastUpdated')
+    .sort((a, b) => b[1] - a[1])[0];
+    const rankedClasses = ['freshman', 'sophomore', 'junior', 'senior', 'staff']
+  .map(grade => ({
+    grade,
+    points: leaderboardData[grade] ?? 0
+  }))
   .sort((a, b) => b.points - a.points);
     const saveGameState = async (newGuesses, isWon, isGameOver) => {
       if (gameMode !== 'daily') return; // Only save for daily mode
@@ -312,33 +353,42 @@ setView('leaderboard');
     const loadLeaderboard = async () => {
   const today = getTodayString();
   const docRef = doc(db, 'leaderboards', today);
-  const snap = await getDoc(docRef);
+  let snap = await getDoc(docRef);
 
-  if (!snap.exists()) return;
+  // ✅ CREATE DOC IF IT DOESN'T EXIST
+  if (!snap.exists()) {
+    await setDoc(docRef, {
+  freshman: 0,
+  sophomore: 0,
+  junior: 0,
+  senior: 0,
+  staff: 0,
+  createdAt: Timestamp.now()
+});
+    snap = await getDoc(docRef);
+  }
 
   const data = {
-    freshman: snap.data().freshman || 0,
-    sophomore: snap.data().sophomore || 0,
-    junior: snap.data().junior || 0,
-    senior: snap.data().senior || 0
-  };
+  freshman: snap.data().freshman || 0,
+  sophomore: snap.data().sophomore || 0,
+  junior: snap.data().junior || 0,
+  senior: snap.data().senior || 0,
+  staff: snap.data().staff || 0   // 👈 ADD THIS
+};
 
   const sorted = Object.entries(data)
     .map(([grade, points]) => ({ grade, points }))
     .sort((a, b) => b.points - a.points);
 
-  // Build new rank map
   const newRanks = {};
   sorted.forEach((item, index) => {
     newRanks[item.grade] = index + 1;
   });
 
-  // Compare against previous ranks
   const movement = {};
   Object.keys(newRanks).forEach(grade => {
     if (previousRanks[grade]) {
       movement[grade] = previousRanks[grade] - newRanks[grade];
-      // positive = moved UP
     }
   });
 
@@ -346,6 +396,7 @@ setView('leaderboard');
   setRankChanges(movement);
   setLeaderboardData(data);
 };
+
 
 const finalizeDayIfNeeded = async (date) => {
   const winnerRef = doc(db, 'dailyWinners', date);
@@ -363,7 +414,8 @@ const finalizeDayIfNeeded = async (date) => {
     freshman: data.freshman || 0,
     sophomore: data.sophomore || 0,
     junior: data.junior || 0,
-    senior: data.senior || 0
+    senior: data.senior || 0,
+    staff: data.staff || 0
   };
 
   const sorted = Object.entries(grades)
@@ -402,6 +454,15 @@ const loadLeaderboardHistory = async () => {
   if (lifetimeSnap.exists()) {
     setLifetimeLeaderboard(lifetimeSnap.data());
   }
+};
+const loadDailyWinners = async () => {
+  const snap = await getDocs(collection(db, 'dailyWinners'));
+
+  const winners = snap.docs
+    .map(d => d.data())
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  setDailyWinners(winners);
 };
     const checkGuess = (guessClass) => {
       const results = {};
@@ -792,40 +853,7 @@ setView('leaderboard');
               </div>
             )}
             
-            {/* Grade Prompt */}
-            {showGradePrompt && gameMode === 'daily' && (
-              <div className="mb-6 p-6 rounded-lg bg-gradient-to-r from-purple-400 to-indigo-500 text-white text-center">
-                <h2 className="text-2xl font-bold mb-4">Amazing! What grade are you in?</h2>
-                <p className="text-sm mb-4">Your score will be added to the leaderboard!</p>
-                <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-                  <button
-                    onClick={() => handleGradeSubmit('Freshman')}
-                    className="px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-gray-100 font-semibold text-lg"
-                  >
-                    Freshman
-                  </button>
-                  <button
-                    onClick={() => handleGradeSubmit('Sophomore')}
-                    className="px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-gray-100 font-semibold text-lg"
-                  >
-                    Sophomore
-                  </button>
-                  <button
-                    onClick={() => handleGradeSubmit('Junior')}
-                    className="px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-gray-100 font-semibold text-lg"
-                  >
-                    Junior
-                  </button>
-                  <button
-                    onClick={() => handleGradeSubmit('Senior')}
-                    className="px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-gray-100 font-semibold text-lg"
-                  >
-                    Senior
-                  </button>
-                </div>
-              </div>
-            )}
-
+            
 
 
             {/* Already Completed - Daily Mode Failed */}
@@ -871,6 +899,57 @@ setView('leaderboard');
                   </div>
                 </div>
               ))}
+              {/* Grade Prompt */}
+            {showGradePrompt && gameMode === 'daily' && (
+  <div
+    ref={gradePromptRef}
+    className="mb-6 p-6 rounded-lg bg-gradient-to-r from-purple-400 to-indigo-500 text-white text-center"
+  >
+    
+                <h2 className="text-2xl font-bold mb-4">Amazing! What grade are you in?</h2>
+                <p className="text-sm mb-4">Your score will be added to the leaderboard!</p>
+                <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+  <button
+    onClick={() => handleGradeSubmit('Freshman')}
+    className="px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold"
+  >
+    Freshman
+  </button>
+
+  <button
+    onClick={() => handleGradeSubmit('Sophomore')}
+    className="px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold"
+  >
+    Sophomore
+  </button>
+
+  <button
+    onClick={() => handleGradeSubmit('Junior')}
+    className="px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold"
+  >
+    Junior
+  </button>
+
+  <button
+    onClick={() => handleGradeSubmit('Senior')}
+    className="px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold"
+  >
+    Senior
+  </button>
+
+  {/* 👇 STAFF */}
+  <button
+    onClick={() => handleGradeSubmit('Staff')}
+    className="col-span-2 px-6 py-3 bg-indigo-900 text-white rounded-lg font-semibold"
+  >
+    Staff / Faculty
+  </button>
+</div>
+                
+              </div>
+              
+            )}
+
             </div>
             
             <style>{`
@@ -967,22 +1046,32 @@ setView('leaderboard');
                       className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none text-sm sm:text-base"
                     />
                     {showDropdown && filteredClasses.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {filteredClasses.map((cls, idx) => (
-                          <div
-                            key={`${cls.name}-${cls.teacher}-${idx}`}
-                            onClick={() => handleSelectClass(cls)}
-                            className={`px-4 py-2 cursor-pointer text-sm sm:text-base ${
-                              idx === highlightedIndex 
-                                ? 'bg-indigo-200' 
-                                : 'hover:bg-indigo-100'
-                            }`}
-                          >
-                            {cls.name} <span className="text-gray-500">- {cls.teacher} ({cls.subject})</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+  <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-lg max-h-72 overflow-y-auto touch-pan-y">
+    
+    {filteredClasses.map((cls, idx) => (
+      <div
+        key={`${cls.name}-${cls.teacher}-${idx}`}
+        onClick={() => handleSelectClass(cls)}
+        className={`px-4 py-3 cursor-pointer text-sm ${
+          idx === highlightedIndex
+            ? 'bg-indigo-200'
+            : 'hover:bg-indigo-100'
+        }`}
+      >
+        {/* Class name */}
+        <div className="font-medium truncate">
+          {cls.name}
+        </div>
+
+        {/* Teacher + subject (stacked on mobile) */}
+        <div className="text-gray-500 text-xs sm:text-sm truncate">
+          {cls.teacher} • {cls.subject}
+        </div>
+      </div>
+    ))}
+  </div>
+  
+)}
                   </div>
                   <button
                     onClick={handleGuess}
@@ -1045,7 +1134,37 @@ setView('leaderboard');
                       {/* Leaderboard */}
 {view === 'leaderboard' && (
   <div className="space-y-6 mt-6">
+{lifetimeWinner && (
+  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow-xl p-6 text-center">
+    <h3 className="text-2xl font-bold mb-1">
+      🏅 All-Time Winning Class
+    </h3>
+    <p className="text-lg">
+      {GRADE_LABELS[lifetimeWinner[0]]} — {lifetimeWinner[1]} total wins
+    </p>
+  </div>
+)}
+{dailyWinners.length > 0 && (
+  <div className="bg-white rounded-lg shadow-xl p-6">
+    <h3 className="text-xl font-bold mb-4 text-center">
+      📅 Daily Winners History
+    </h3>
 
+    <div className="space-y-2 max-h-64 overflow-y-auto">
+      {dailyWinners.map(day => (
+        <div
+          key={day.date}
+          className="flex justify-between text-sm border-b pb-2"
+        >
+          <span>{day.date}</span>
+          <span className="font-semibold">
+            {GRADE_LABELS[day.winner]} ({day.points} pts)
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
     <div className="bg-white rounded-lg shadow-xl p-6">
       <h2 className="text-2xl font-bold mb-4 text-center">
         🏆 Class Leaderboard
@@ -1076,7 +1195,7 @@ setView('leaderboard');
           >
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 font-bold text-lg">
-                #{idx + 1} {GRADE_LABELS[entry.grade]}
+                #{idx + 1} {GRADE_LABELS[entry.grade] ?? entry.grade}
                 {idx === 0 && <Crown className="text-yellow-500" />}
               </div>
 
