@@ -1,14 +1,9 @@
   import React, { useState, useEffect, useRef } from 'react';
-  import { CheckCircle, XCircle, RotateCcw, Calendar, Infinity } from 'lucide-react';
+  import { CheckCircle, XCircle, RotateCcw, Calendar } from 'lucide-react';
   import { Crown, ArrowUp, ArrowDown } from 'lucide-react';
   import { initializeApp } from 'firebase/app';
-  import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore';
-  import { increment } from 'firebase/firestore';
-  import { getDocs } from 'firebase/firestore';
-  
+  import { getFirestore, collection, doc, setDoc, getDoc, Timestamp, increment, getDocs } from 'firebase/firestore';
 
-
-  // Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyA0FfF7Y4ypx-KU7G6Jo8xPbe3Q9n96SyQ",
     authDomain: "clae-aad06.firebaseapp.com",
@@ -26,11 +21,10 @@
   staff: 'Staff'
 };
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const STREAK_STORAGE_KEY = 'class-wordle-streak';
 
-  // Your actual school classes
   const CLASSES = [
     { name: "Algebra 2", teacher: "Campbell", floor: "3", subject: "Math", type: "Class", room: "3160" },
     { name: "Pre-Calculus", teacher: "Campbell", floor: "3", subject: "Math", type: "Class", room: "3160" },
@@ -86,7 +80,6 @@
   ];
 
   const ATTRIBUTES = ['teacher', 'floor', 'room', 'subject', 'type'];
-  // Confetti component
   const Confetti = () => {
     const [pieces, setPieces] = useState([]);
     
@@ -141,11 +134,11 @@
       </div>
     );
   };
-  const APP_VERSION = '1.0.5'; // bump this on every deploy
+  const APP_VERSION = '1.0.5';
 
   export default function ClassWordleGame() {
-    const gradePromptRef = useRef(null);
-    const [gameMode, setGameMode] = useState(null); // 'daily' or 'unlimited'
+    const appRootRef = useRef(null);
+    const [gameMode, setGameMode] = useState(null);
     const [targetClass, setTargetClass] = useState(null);
     const [guesses, setGuesses] = useState([]);
     const [selectedClass, setSelectedClass] = useState('');
@@ -163,6 +156,7 @@
     const [showGradePrompt, setShowGradePrompt] = useState(false);
     const [userGrade, setUserGrade] = useState(null);
     const [dailyWinners, setDailyWinners] = useState([]);
+    const [currentStreak, setCurrentStreak] = useState(0);
     const [leaderboardData, setLeaderboardData] = useState({
   freshman: 0,
   sophomore: 0,
@@ -182,20 +176,112 @@ useEffect(() => {
     const [view, setView] = useState('game'); 
     const [leaderboardHistory, setLeaderboardHistory] = useState([]);
     const [lifetimeLeaderboard, setLifetimeLeaderboard] = useState(null);
+    useEffect(() => {
+      const sendHeight = () => {
+        if (!window.parent || window.parent === window) return;
+        const node = appRootRef.current;
+        const height = node
+          ? Math.ceil(node.scrollHeight)
+          : Math.ceil(document.body.scrollHeight || document.documentElement.scrollHeight);
+        window.parent.postMessage({ type: 'classle-resize', height }, '*');
+      };
+
+      const scheduleSend = () => {
+        requestAnimationFrame(() => {
+          sendHeight();
+        });
+      };
+
+      scheduleSend();
+      window.addEventListener('load', scheduleSend);
+      window.addEventListener('resize', scheduleSend);
+
+      let ro;
+      if ('ResizeObserver' in window) {
+        ro = new ResizeObserver(() => scheduleSend());
+        if (appRootRef.current) {
+          ro.observe(appRootRef.current);
+        }
+      }
+
+      return () => {
+        window.removeEventListener('load', scheduleSend);
+        window.removeEventListener('resize', scheduleSend);
+        if (ro) ro.disconnect();
+      };
+    }, []);
 
     const getTodayString = () => {
       const today = new Date();
       const pad = n => n.toString().padStart(2, '0');
 return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
     };
+    const getYesterdayString = () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const pad = n => n.toString().padStart(2, '0');
+      return `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
+    };
+    const readStreakData = () => {
+      try {
+        const raw = localStorage.getItem(STREAK_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    };
+    const writeStreakData = (data) => {
+      try {
+        localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify(data));
+      } catch {
+      }
+    };
+    const refreshStreakForToday = () => {
+      const data = readStreakData();
+      if (!data || !data.lastDate) {
+        setCurrentStreak(0);
+        return;
+      }
+      const today = getTodayString();
+      const yesterday = getYesterdayString();
+      if (data.lastDate === today) {
+        setCurrentStreak(data.count || 0);
+        return;
+      }
+      if (data.lastDate === yesterday && data.lastWon) {
+        setCurrentStreak(data.count || 0);
+        return;
+      }
+      setCurrentStreak(0);
+    };
+    const updateStreakOnResult = (isWon) => {
+      const today = getTodayString();
+      const yesterday = getYesterdayString();
+      const data = readStreakData() || {};
+      let newCount = 0;
+
+      if (isWon) {
+        if (data.lastDate === today && data.lastWon) {
+          newCount = data.count || 1;
+        } else if (data.lastDate === yesterday && data.lastWon) {
+          newCount = (data.count || 0) + 1;
+        } else {
+          newCount = 1;
+        }
+      } else {
+        newCount = 0;
+      }
+
+      writeStreakData({ count: newCount, lastDate: today, lastWon: isWon });
+      setCurrentStreak(newCount);
+    };
     const [pointToast, setPointToast] = useState(null);
     const getDailyClass = (dateString) => {
-      // Simple hash function to get consistent daily puzzle
       let hash = 0;
       for (let i = 0; i < dateString.length; i++) {
         const char = dateString.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
-        hash = hash | 0; // Convert to 32bit integer
+        hash = hash | 0;
       }
       const index = Math.abs(hash) % CLASSES.length;
       return CLASSES[index];
@@ -207,6 +293,7 @@ return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate(
 
     const loadGameState = async () => {
       setLoading(true);
+      refreshStreakForToday();
       const today = getTodayString();
       const dailyClass = getDailyClass(today);
       setTodaysPuzzle(today);
@@ -272,24 +359,13 @@ finalizeDayIfNeeded(y);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // ✅ Leaderboard scroll
   useEffect(() => {
   if (view === 'leaderboard') {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     loadLeaderboardHistory();
     loadDailyWinners();
   }
 }, [view]);
 
-  // ✅ Grade prompt scroll
-  useEffect(() => {
-    if (showGradePrompt && gradePromptRef.current) {
-      gradePromptRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
-  }, [showGradePrompt]);
     const lifetimeWinner =
   lifetimeLeaderboard &&
   Object.entries(lifetimeLeaderboard)
@@ -302,7 +378,7 @@ finalizeDayIfNeeded(y);
   }))
   .sort((a, b) => b.points - a.points);
     const saveGameState = async (newGuesses, isWon, isGameOver) => {
-      if (gameMode !== 'daily') return; // Only save for daily mode
+      if (gameMode !== 'daily') return;
       
       const today = getTodayString();
       const gameData = {
@@ -355,7 +431,6 @@ finalizeDayIfNeeded(y);
   const docRef = doc(db, 'leaderboards', today);
   let snap = await getDoc(docRef);
 
-  // ✅ CREATE DOC IF IT DOESN'T EXIST
   if (!snap.exists()) {
     await setDoc(docRef, {
   freshman: 0,
@@ -373,7 +448,7 @@ finalizeDayIfNeeded(y);
   sophomore: snap.data().sophomore || 0,
   junior: snap.data().junior || 0,
   senior: snap.data().senior || 0,
-  staff: snap.data().staff || 0   // 👈 ADD THIS
+  staff: snap.data().staff || 0
 };
 
   const sorted = Object.entries(data)
@@ -396,7 +471,6 @@ finalizeDayIfNeeded(y);
   setRankChanges(movement);
   setLeaderboardData(data);
 };
-
 
 const finalizeDayIfNeeded = async (date) => {
   const winnerRef = doc(db, 'dailyWinners', date);
@@ -423,14 +497,12 @@ const finalizeDayIfNeeded = async (date) => {
 
   const [winner, points] = sorted[0];
 
-  // Save daily winner
   await setDoc(winnerRef, {
     winner,
     points,
     date
   });
 
-  // Increment lifetime leaderboard
   const lifetimeRef = doc(db, 'lifetimeLeaderboard', 'global');
   await setDoc(
     lifetimeRef,
@@ -470,7 +542,6 @@ const loadDailyWinners = async () => {
       
       ATTRIBUTES.forEach(attr => {
         if (attr === 'room') {
-          // Check room numbers for close proximity
           const guessRoom = parseInt(guessClass.room);
           const targetRoom = parseInt(targetClass.room);
           const difference = Math.abs(guessRoom - targetRoom);
@@ -501,7 +572,6 @@ const loadDailyWinners = async () => {
       
       setRevealingGuess(true);
       
-      // Add guess with animation delay
       setTimeout(() => {
         const newGuesses = [...guesses, { class: guessClass, results }];
         setGuesses(newGuesses);
@@ -510,7 +580,7 @@ const loadDailyWinners = async () => {
         setShowDropdown(false);
 
         const isWon = guessClass.name === targetClass.name && guessClass.teacher === targetClass.teacher;
-        const isGameOver = isWon || newGuesses.length >= 5;
+        const isGameOver = isWon || newGuesses.length >= 6;
 
         if (isWon) {
           setTimeout(() => {
@@ -519,6 +589,7 @@ const loadDailyWinners = async () => {
             if (gameMode === 'daily') {
               setAlreadyCompleted(true);
               setShowGradePrompt(true);
+              updateStreakOnResult(true);
             }
             setShowConfetti(true);
             saveGameState(newGuesses, true, true);
@@ -531,12 +602,12 @@ const loadDailyWinners = async () => {
             setGameOver(true);
             if (gameMode === 'daily') {
               setAlreadyCompleted(true);
+              updateStreakOnResult(false);
             }
             saveGameState(newGuesses, false, true);
             setRevealingGuess(false);
           }, 600);
         } else {
-          // Wrong guess but game continues
           setShakeWrong(true);
           setTimeout(() => {
             setShakeWrong(false);
@@ -577,7 +648,7 @@ const loadDailyWinners = async () => {
     };
     const getPointsForGuesses = (guessCount) => {
       if (guessCount <= 3) return 5;
-      return 3; // 4–5 guesses
+      return 3;
     };
     const handleSelectClass = (cls) => {
       setSelectedClass(cls);
@@ -650,10 +721,9 @@ setView('leaderboard');
   }
 };
 
-    // Mode Selection Screen
     if (loading) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8 flex items-center justify-center">
+        <div ref={appRootRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8 flex items-center justify-center">
           <div className="text-xl text-indigo-600">Loading...</div>
         </div>
       );
@@ -661,7 +731,7 @@ setView('leaderboard');
 
     if (!gameMode && !alreadyCompleted) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8 flex items-center justify-center">
+        <div ref={appRootRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
             <h1
   className={`text-3xl sm:text-4xl font-bold mb-4 ${
@@ -670,14 +740,14 @@ setView('leaderboard');
       : 'text-purple-600'
   }`}
 >
-  {gameMode === 'daily' ? 'Daily Raisbeck' : 'Raisbeck Unlimited'}
+  {gameMode === 'daily' ? 'Daily Raisbeck' : 'Raisbeck Wordle'}
 </h1>
             <p className="text-gray-600 text-center mb-8">Choose your game mode:</p>
             
             <div className="relative flex flex-col items-center mb-6">
-              {/* Unlimited Mode (background) */}
+              
   <div className="flex flex-col items-center gap-4 mb-6">
-  {/* Daily Mode – Primary */}
+  
   <button
     onClick={() => {
       const today = getTodayString();
@@ -709,7 +779,7 @@ setView('leaderboard');
     New puzzle every day • Compete with your class
   </p>
 
-  {/* Unlimited Mode – Secondary */}
+  
   <button
     onClick={() => {
       setGameMode('unlimited');
@@ -735,7 +805,6 @@ setView('leaderboard');
   </button>
 </div>
 
-
   <p className="mt-16 text-sm text-indigo-600 font-medium text-center">
     New puzzle every day • Class leaderboard
   </p>
@@ -746,7 +815,7 @@ setView('leaderboard');
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
+      <div ref={appRootRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
         {pointToast && (
   <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-toast">
     <div className="bg-indigo-600 text-white px-6 py-3 rounded-full shadow-xl font-bold text-lg">
@@ -782,25 +851,30 @@ setView('leaderboard');
 </div>
       {view === 'game' && (
           <div className="bg-white rounded-lg shadow-xl p-4 sm:p-8">
-            {/* Header */}
+            
             <div className="text-center mb-6 sm:mb-8">
               <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-indigo-600">
   {gameMode === 'daily'
     ? 'Daily Raisbeck'
-    : 'Raisbeck Unlimited'}
+    : 'Raisbeck Wordle'}
 </h1>
               
               <p className="text-gray-600 text-sm sm:text-base">Guess the mystery class or club based on its attributes!</p>
               {gameMode === 'daily' && (
-                <div className="flex items-center justify-center gap-2 mt-2 text-xs sm:text-sm text-gray-500">
-                  <Calendar size={16} />
-                  <span>Puzzle #{Math.floor((new Date() - new Date('2025-01-01')) / (1000 * 60 * 60 * 24))}</span>
+                <div className="mt-2 text-xs sm:text-sm text-gray-500 space-y-1">
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar size={16} />
+                    <span>Puzzle #{Math.floor((new Date() - new Date('2025-01-01')) / (1000 * 60 * 60 * 24))}</span>
+                  </div>
+                  <div className="text-center">
+                    Current streak: <span className="font-semibold text-gray-700">{currentStreak}</span>
+                  </div>
                 </div>
               )}
             </div>
             
 
-            {/* Already Completed - Daily Mode Celebration */}
+            
             {alreadyCompleted && won && gameMode === 'daily' && !showGradePrompt && (
               <div className="mb-6 p-6 rounded-lg bg-gradient-to-r from-green-400 to-emerald-500 text-white text-center">
                 <div className="mt-10 mb-12 flex flex-col items-center">
@@ -855,8 +929,7 @@ setView('leaderboard');
             
             
 
-
-            {/* Already Completed - Daily Mode Failed */}
+            
             {alreadyCompleted && !won && gameMode === 'daily' && (
               <div className="mb-6 p-6 rounded-lg bg-gradient-to-r from-orange-400 to-red-500 text-white text-center">
                 <XCircle size={48} className="mx-auto mb-3" />
@@ -870,7 +943,7 @@ setView('leaderboard');
               </div>
             )}
 
-            {/* Guesses History */}
+            
             <div className={`mb-6 space-y-3 ${shakeWrong ? 'animate-shake' : ''}`}>
               {guesses.map((guess, idx) => (
                 <div 
@@ -899,10 +972,9 @@ setView('leaderboard');
                   </div>
                 </div>
               ))}
-              {/* Grade Prompt */}
+              
             {showGradePrompt && gameMode === 'daily' && (
   <div
-    ref={gradePromptRef}
     className="mb-6 p-6 rounded-lg bg-gradient-to-r from-purple-400 to-indigo-500 text-white text-center"
   >
     
@@ -937,7 +1009,7 @@ setView('leaderboard');
     Senior
   </button>
 
-  {/* 👇 STAFF */}
+  
   <button
     onClick={() => handleGradeSubmit('Staff')}
     className="col-span-2 px-6 py-3 bg-indigo-900 text-white rounded-lg font-semibold"
@@ -1028,11 +1100,11 @@ setView('leaderboard');
 }
             `}</style>
 
-            {/* Input Area */}
+            
             {!gameOver && targetClass && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type to search for a class or club (Attempt {guesses.length + 1}/5):
+                  Type to search for a class or club (Attempt {guesses.length + 1}/6):
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex-1 relative">
@@ -1046,7 +1118,7 @@ setView('leaderboard');
                       className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none text-sm sm:text-base"
                     />
                     {showDropdown && filteredClasses.length > 0 && (
-  <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-lg max-h-72 overflow-y-auto touch-pan-y">
+  <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-lg touch-pan-y">
     
     {filteredClasses.map((cls, idx) => (
       <div
@@ -1058,12 +1130,12 @@ setView('leaderboard');
             : 'hover:bg-indigo-100'
         }`}
       >
-        {/* Class name */}
+        
         <div className="font-medium truncate">
           {cls.name}
         </div>
 
-        {/* Teacher + subject (stacked on mobile) */}
+        
         <div className="text-gray-500 text-xs sm:text-sm truncate">
           {cls.teacher} • {cls.subject}
         </div>
@@ -1084,7 +1156,7 @@ setView('leaderboard');
               </div>
             )}
 
-            {/* Game Over - Unlimited Mode */}
+            
             {gameOver && gameMode === 'unlimited' && (
               <div className={`mb-6 p-6 rounded-lg ${won ? 'bg-green-100 border-2 border-green-500' : 'bg-red-100 border-2 border-red-500'}`}>
                 <div className="flex items-center gap-2 mb-2 justify-center">
@@ -1115,7 +1187,7 @@ setView('leaderboard');
               </div>
             )}
 
-            {/* Legend */}
+            
             <div className="mt-8 pt-6 border-t-2 border-gray-200">
               <h3 className="font-semibold text-gray-700 mb-3">How to Play:</h3>
               <ul className="text-sm text-gray-600 space-y-1">
@@ -1124,14 +1196,14 @@ setView('leaderboard');
                 <li>• <span className="inline-block w-4 h-4 bg-green-500 rounded"></span> Green = Correct attribute or exact class match</li>
                 <li>• <span className="inline-block w-4 h-4 bg-yellow-500 rounded"></span> Yellow = Room number is close (within 20)</li>
                 <li>• <span className="inline-block w-4 h-4 bg-gray-300 rounded"></span> Gray = Incorrect attribute</li>
-                <li>• You have 5 attempts to find the correct class or club</li>
+                <li>• You have 6 attempts to find the correct class or club</li>
                 <li>• Select a class or club from the dropdown and press Enter to guess</li>
                 {gameMode === 'daily' && <li>• Your progress is saved automatically</li>}
               </ul>
             </div>
           </div>
           )}
-                      {/* Leaderboard */}
+                      
 {view === 'leaderboard' && (
   <div className="space-y-6 mt-6">
 {lifetimeWinner && (
@@ -1150,7 +1222,7 @@ setView('leaderboard');
       📅 Daily Winners History
     </h3>
 
-    <div className="space-y-2 max-h-64 overflow-y-auto">
+    <div className="space-y-2">
       {dailyWinners.map(day => (
         <div
           key={day.date}
@@ -1175,7 +1247,7 @@ setView('leaderboard');
 </h3>
   <ul className="space-y-1">
     <li>• 5 points if you solve the Daily puzzle in 1–3 guesses</li>
-    <li>• 3 points if you solve it in 4–5 guesses</li>
+    <li>• 3 points if you solve it in 4–6 guesses</li>
     <li>• Points are awarded once per day per player</li>
     <li>• Winning class is determined by total daily points</li>
   </ul>
@@ -1209,7 +1281,7 @@ setView('leaderboard');
         );
       })}
 
-      {/* Back button (extra clarity) */}
+      
       <button
         onClick={() => setView('game')}
         className="mt-6 w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold"
